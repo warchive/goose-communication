@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	// "bufio"
 
 	"./lib/tls"
 	"./lib/wstream"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/mogball/wcomms/wjson"
+	// "github.com/tarm/serial"
 )
 
 const addr1 = ":10000"
@@ -23,8 +25,21 @@ func main() {
 	checkError(err)
 	listener2, err := quic.ListenAddr(addr2, tls.GenerateConfig(), &config)
 	checkError(err)
+
 	fmt.Println("Server started")
+
+	/*
+	c := &serial.Config{Name: "COM3", Baud: 9600}
+	s, err := serial.OpenPort(c)
+	checkError(err)
+	reader := bufio.NewReader(s)
+	*/
 	for {
+		/*
+		r, err := reader.ReadBytes(255)
+		checkError(err)
+		fmt.Println(r)
+		*/
 		session1, err := listener1.Accept() // Wait for call and return a Conn
 		session2, err := listener2.Accept() // Wait for call and return a Conn
 		if err != nil {
@@ -32,6 +47,7 @@ func main() {
 		}
 		go handleClient(session1)
 		go handleClient(session2)
+
 	}
 }
 
