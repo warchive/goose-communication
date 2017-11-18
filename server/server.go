@@ -1,16 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"./lib/tls"
 	"./lib/wstream"
 
-	"github.com/buger/jsonparser"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/mogball/wcomms/wjson"
 )
 
 const addr1 = ":10000"
@@ -51,35 +49,29 @@ func handleClient(session quic.Session) {
 }
 
 func handleStream(stream *quic.Stream) {
-	start := time.Now()
 	var wstream wstream.Stream = new(wstream.OrderedStream)
 	wstream.Open(stream)
-	i := 0
+	defer wstream.Close()
 	for {
-		bytes := wstream.ReadSync()
-		i++
-		if i%100 == 0 {
-			fmt.Println(time.Duration(int64(time.Since(start)) / int64(i)))
-			fmt.Printf("%s\n", string(bytes))
+		packet, err := wstream.ReadCommPacketSync()
+		if err != nil {
+			fmt.Println(err)
+			continue
 		}
-		id, iderr := jsonparser.GetString(bytes, "id")
-		if iderr == nil {
-			acknowledgeMessage(wstream, id, true)
-		}
-		if i%100 == 99 {
-			fmt.Printf("%d\n", i)
-		}
+		acknowledgeMessage(wstream, packet.Name)
+		fmt.Printf("%+v\n", packet)
 	}
 }
 
 // Let client know message was recieved
-func acknowledgeMessage(wstream wstream.Stream, id string, success bool) {
-	msg := map[string]interface{}{"id": id, "type": "recieved", "success": success}
-	bytes, err := json.Marshal(msg)
-	if err != nil {
-		return
+func acknowledgeMessage(wstream wstream.Stream, name string) {
+	packet := &wjson.CommPacketJson{
+		Time: 1323,
+		Type: "State",
+		Name: name,
+		Data: []float32{32.2323, 1222.22, 2323.11},
 	}
-	wstream.WriteSync(bytes)
+	wstream.WriteCommPacketSync(packet)
 }
 
 // Check and print errors

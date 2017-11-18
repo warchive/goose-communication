@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"strconv"
 	"sync"
 
 	quic "github.com/lucas-clemente/quic-go"
@@ -56,7 +55,7 @@ func OpenStream(j int, session *quic.Session) {
 }
 
 func SendPacket(i int, stream *quic.Stream, buf2 []byte) {
-	msg := `{"id": "1234567890", "type": "hello", "data": { "n": ` + strconv.Itoa(i) + `}}`
+	msg := `{"time": 31231313, "type": "Command", "name": "Test", "data":[12, 212, 312]}`
 
 	buf := []byte(msg)
 	_, err := (*stream).Write(buf) // Write a message to the server
