@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 	// "bufio"
 
 	"./lib/tls"
@@ -13,69 +14,65 @@ import (
 	// "github.com/tarm/serial"
 )
 
-const addr1 = ":10000"
-const addr2 = ":12345"
+const addr = ":10000"
 
 var i int
 
 func main() {
 	// Choose port to listen from
 	config := quic.Config{IdleTimeout: 0}
-	listener1, err := quic.ListenAddr(addr1, tls.GenerateConfig(), &config)
-	checkError(err)
-	listener2, err := quic.ListenAddr(addr2, tls.GenerateConfig(), &config)
+	listener, err := quic.ListenAddr(addr, tls.GenerateConfig(), &config)
 	checkError(err)
 
 	fmt.Println("Server started")
 
 	/*
-	c := &serial.Config{Name: "COM3", Baud: 9600}
-	s, err := serial.OpenPort(c)
-	checkError(err)
-	reader := bufio.NewReader(s)
+		c := &serial.Config{Name: "COM3", Baud: 9600}
+		s, err := serial.OpenPort(c)
+		checkError(err)
+		reader := bufio.NewReader(s)
 	*/
 	for {
 		/*
-		r, err := reader.ReadBytes(255)
-		checkError(err)
-		fmt.Println(r)
+			r, err := reader.ReadBytes(255)
+			checkError(err)
+			fmt.Println(r)
 		*/
-		session1, err := listener1.Accept() // Wait for call and return a Conn
-		session2, err := listener2.Accept() // Wait for call and return a Conn
+		session, err := listener.Accept() // Wait for call and return a Conn
 		if err != nil {
 			break
 		}
-		go handleClient(session1)
-		go handleClient(session2)
+
+		go handleClient(session)
 
 	}
 }
 
 func handleClient(session quic.Session) {
-	defer session.Close(nil)
-	for {
-		stream, err := session.AcceptStream()
-		if err != nil {
-			fmt.Println(err)
-			break
-		} else {
-			go handleStream(&stream)
-		}
+	//defer session.Close(nil)
+	wconn := wstream.AcceptConn(&session, []string{"sensor1", "sensor2", "sensor3", "command", "log"})
+	fmt.Printf("%s %+v\n", "sss", wconn.Streams())
+	for k, v := range wconn.Streams() {
+		go handleStream(k, v)
 	}
 }
 
-func handleStream(stream *quic.Stream) {
-	var wstream wstream.Stream = new(wstream.OrderedStream)
-	wstream.Open(stream)
+func handleStream(channel string, wstream wstream.Stream) {
 	defer wstream.Close()
-	for {
-		packet, err := wstream.ReadCommPacketSync()
-		if err != nil {
-			fmt.Println(err)
-			continue
+	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
+		for {
+			acknowledgeMessage(wstream, "sensor data")
+			time.Sleep(time.Second)
 		}
-		acknowledgeMessage(wstream, packet.Name)
-		fmt.Printf("%+v\n", packet)
+	} else {
+		for {
+			packet, err := wstream.ReadCommPacketSync()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Printf("%s %+v\n", channel, packet)
+		}
 	}
 }
 

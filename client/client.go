@@ -4,12 +4,16 @@ import (
 	"crypto/tls"
 	"fmt"
 	"sync"
+	"time"
+
+	"../server/lib/wstream"
 
 	quic "github.com/lucas-clemente/quic-go"
+	"github.com/mogball/wcomms/wjson"
 	// "github.com/buger/jsonparser"
 )
 
-// Simple error verification
+// CheckError Simple error verification
 func CheckError(err error) {
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -17,54 +21,51 @@ func CheckError(err error) {
 }
 
 // Different addresses and ports to send data to
-const addr1 = "localhost:10000"
-const addr2 = "localhost:12345"
+const addr = "localhost:10000"
 
 func main() {
 	config := quic.Config{RequestConnectionIDOmission: false}
 
-	// Open sessions to send packets
-	var sessions [2]quic.Session
-	session1, err := quic.DialAddr(addr1, &tls.Config{InsecureSkipVerify: true}, &config)
+	session, err := quic.DialAddr(addr, &tls.Config{InsecureSkipVerify: true}, &config)
 	CheckError(err)
-	session2, err := quic.DialAddr(addr2, &tls.Config{InsecureSkipVerify: true}, &config)
-	CheckError(err)
-	sessions[0] = session1
-	sessions[1] = session2
 
 	// Open multiple streams with waitgroup so main doesn't close before the streams finish sending
 	var wg sync.WaitGroup
-	for i := 0; i < 2; i++ {
-		wg.Add(1)
-		defer wg.Done()
-		go OpenStream(i, &sessions[i])
+	wg.Add(1)
+	defer wg.Done()
+	wconn := wstream.OpenConn(&session, []string{"sensor1", "sensor2", "sensor3", "command", "log"})
+	for k, v := range wconn.Streams() {
+		go handleStream(k, v)
 	}
 	wg.Wait()
 }
 
 // Open a new stream to send data over
-func OpenStream(j int, session *quic.Session) {
-	buf2 := make([]byte, 1024) //allocating memory
-	stream, err := (*session).OpenStream()
-	CheckError(err)
-	// TODO parse data from JSON files
-	//id, iderr = jsonparser.GetString(data, "id")
-	for i := 0; i < 10000; i++ {
-		SendPacket(j*1000+i, &stream, buf2)
+func handleStream(channel string, wstream wstream.Stream) {
+	defer wstream.Close()
+	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
+		for {
+			packet, err := wstream.ReadCommPacketSync()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Printf("%s %+v\n", channel, packet)
+		}
+	} else {
+		for {
+			sendPacket(channel, wstream)
+			time.Sleep(time.Second)
+		}
 	}
 }
 
-func SendPacket(i int, stream *quic.Stream, buf2 []byte) {
-	msg := `{"time": 31231313, "type": "Command", "name": "Test", "data":[12, 212, 312]}`
-
-	buf := []byte(msg)
-	_, err := (*stream).Write(buf) // Write a message to the server
-	CheckError(err)
-
-	n, err := (*stream).Read(buf2) // Read a message from the server
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Printf("%s\n", buf2[0:n])
+func sendPacket(channel string, wstream wstream.Stream) {
+	packet := &wjson.CommPacketJson{
+		Time: 1323,
+		Type: channel,
+		Name: channel,
+		Data: []float32{32.2323, 1222.22, 2323.11},
 	}
+	wstream.WriteCommPacketSync(packet)
 }

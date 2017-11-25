@@ -8,7 +8,6 @@ import (
 )
 
 type Stream interface {
-	Open(stream *quic.Stream)
 	Close()
 	ReadCommPacketSync() (*wjson.CommPacketJson, error)
 	WriteCommPacketSync(packet *wjson.CommPacketJson) error
@@ -20,8 +19,9 @@ type OrderedStream struct {
 	dataChannel chan []byte
 }
 
-// Open creates a new OrderedStream from an existing QUIC stream
-func (wstream *OrderedStream) Open(stream *quic.Stream) {
+// OpenStream creates a new OrderedStream from an existing QUIC stream
+func OpenStream(stream *quic.Stream) Stream {
+	wstream := new(OrderedStream)
 	wstream.stream = stream
 	buf := make([]byte, 1024)
 	wstream.dataChannel = make(chan []byte)
@@ -36,6 +36,7 @@ func (wstream *OrderedStream) Open(stream *quic.Stream) {
 			}
 		}
 	}()
+	return wstream
 }
 
 // Close closes the OrderedStream
