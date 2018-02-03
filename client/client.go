@@ -79,7 +79,7 @@ func SendPacket(channel string, wstream wstream.Stream) {
 func LogPacket(packet []byte) {
 	f, err := os.OpenFile("logs/log.txt", os.O_APPEND|os.O_WRONLY, 0644)
 	CheckError(err)
-	n, err := f.WriteString(string(packet))
+	n, err := f.WriteString(string(packet) + "\n")
 	_ = n
 	CheckError(err)
 }
