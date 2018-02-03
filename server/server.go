@@ -61,7 +61,7 @@ func handleStream(channel string, wstream wstream.Stream) {
 	defer wstream.Close()
 	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
 		for {
-			acknowledgeMessage(wstream, "sensor data")
+			acknowledgeMessage(wstream, "sensor test")
 			time.Sleep(time.Second)
 		}
 	} else {

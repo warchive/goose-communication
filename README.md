@@ -10,6 +10,7 @@
 - ```go get github.com/buger/jsonparser```
 - ```go get github.com/lucas-clemente/quic-go```
 - ```go get github.com/xtaci/kcp-go```
+- ```go get github.com/mogball/wcomms/wjson```
 
 ### Backend/Communication-Systems
 #### Raspbian Stretch with Desktop Installation Guide
