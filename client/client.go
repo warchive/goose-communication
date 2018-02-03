@@ -1,15 +1,15 @@
 package main
 
 import (
-	"crypto/tls"
-	"fmt"
-	"sync"
-	"time"
-
 	"../server/lib/wstream"
-
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	quic "github.com/lucas-clemente/quic-go"
 	"github.com/mogball/wcomms/wjson"
+	"os"
+	"sync"
+	"time"
 	// "github.com/buger/jsonparser"
 )
 
@@ -68,4 +68,12 @@ func sendPacket(channel string, wstream wstream.Stream) {
 		Data: []float32{32.2323, 1222.22, 2323.11},
 	}
 	wstream.WriteCommPacketSync(packet)
+}
+
+func logPacket(packet []byte) {
+	f, err := OpenFile("logs/log.txt", os.O_APPEND|os.o_WRONLY, 0644)
+	CheckError(err)
+	n, err := f.WriteString(string(packet))
+	_ = n
+	CheckError(err)
 }
