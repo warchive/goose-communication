@@ -61,7 +61,7 @@ func handleStream(channel string, wstream wstream.Stream) {
 	defer wstream.Close()
 	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
 		for {
-			acknowledgeMessage(wstream, "sensor test")
+			acknowledgeMessage(wstream, 123)
 			time.Sleep(time.Second)
 		}
 	} else {
@@ -77,11 +77,11 @@ func handleStream(channel string, wstream wstream.Stream) {
 }
 
 // Let client know message was recieved
-func acknowledgeMessage(wstream wstream.Stream, name string) {
+func acknowledgeMessage(wstream wstream.Stream, id uint8) {
 	packet := &wjson.CommPacketJson{
 		Time: 1323,
 		Type: "State",
-		Name: name,
+		Id:   id,
 		Data: []float32{32.2323, 1222.22, 2323.11},
 	}
 	wstream.WriteCommPacketSync(packet)
