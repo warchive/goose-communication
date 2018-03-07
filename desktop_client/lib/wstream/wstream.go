@@ -7,12 +7,14 @@ import (
 	"github.com/mogball/wcomms/wjson"
 )
 
+// Stream provides read and write capabiltiies with CommPackets
 type Stream interface {
 	Close()
 	ReadCommPacketSync() (*wjson.CommPacketJson, error)
 	WriteCommPacketSync(packet *wjson.CommPacketJson) error
 }
 
+// OrderedStream is used for order-sensitive data
 type OrderedStream struct {
 	ID          int
 	stream      *quic.Stream
@@ -50,7 +52,7 @@ func (wstream *OrderedStream) Close() {
 
 // ReadCommPacketSync returns the next CommPacketJson in the OrderedStream, blocking until completion
 func (wstream *OrderedStream) ReadCommPacketSync() (*wjson.CommPacketJson, error) {
-	encoded := wstream.readBytes()
+	encoded := wstream.ReadBytes()
 	packet := &(wjson.CommPacketJson{})
 	err := json.Unmarshal(encoded, packet)
 	return packet, err
@@ -59,15 +61,17 @@ func (wstream *OrderedStream) ReadCommPacketSync() (*wjson.CommPacketJson, error
 // WriteCommPacketSync takes a pointer to a CommPacketJson and writes it to the OrderedStream, blocking until completion
 func (wstream *OrderedStream) WriteCommPacketSync(packet *wjson.CommPacketJson) error {
 	bytes, err := json.Marshal(packet)
-	wstream.writeBytes(bytes)
+	wstream.WriteBytes(bytes)
 	return err
 }
 
-func (wstream *OrderedStream) readBytes() []byte {
+// ReadBytes reads bytes from a stream
+func (wstream *OrderedStream) ReadBytes() []byte {
 	bytes := <-wstream.dataChannel
 	return bytes
 }
 
-func (wstream *OrderedStream) writeBytes(bytes []byte) {
+// WriteBytes writes bytes to a stream
+func (wstream *OrderedStream) WriteBytes(bytes []byte) {
 	(*wstream.stream).Write(bytes)
 }
