@@ -10,13 +10,14 @@ import (
 
 // MaxConns stores the maximum number of clients allowed to connect
 const MaxConns = 10
-const BroadcastAddr = "localhost"
+
+// BroadcastAddr is the address where data is broadcasted to
+const BroadcastAddr = "255.255.255.255:12345"
 
 // Handler for recieving data with WPool
 type Handler func(*WPool, net.Conn)
 
 // WPool is a connection pool manager for UDP using net.Conn
-// TODO change dataOut to wjson.CommPacketJson
 type WPool struct {
 	dataAddr    string
 	commandAddr string
@@ -39,13 +40,10 @@ func CreateWPool(dataAddr string, commandAddr string, handler Handler) *WPool {
 }
 
 // Serve starts the connection pool and adds / closes connections
-// TODO implement connections being closed
 func (pool *WPool) Serve() {
-	addr := net.UDPAddr{
-		Port: 12345,
-		IP:   net.ParseIP("localhost"),
-	}
-	dataConn, err := net.ListenUDP("udp", &addr)
+	DataAddr, err := net.ResolveUDPAddr("udp", BroadcastAddr)
+	dataConn, err := net.DialUDP("udp", nil, DataAddr)
+	fmt.Println(dataConn)
 	commandConn, err := net.Listen("tcp", pool.commandAddr)
 
 	connChannel := make(chan net.Conn)
@@ -57,7 +55,8 @@ func (pool *WPool) Serve() {
 	go func() {
 		for {
 			data := <-pool.dataOut
-			sendPacketByteArray(dataConn, data)
+			fmt.Println(data)
+			SendPacketByteArray(dataConn, data)
 		}
 	}()
 
@@ -133,8 +132,9 @@ func CommandHandler(pool *WPool, conn net.Conn) {
 	}
 }
 
+// BroadcastPacket sets the current dataOut to the provided packet
+// TODO pass in data from desktop client
 func (pool *WPool) BroadcastPacket() {
-
 	packet := wjson.CommPacketJson{
 		Time: 1323,
 		Type: "State",
@@ -144,16 +144,13 @@ func (pool *WPool) BroadcastPacket() {
 	pool.dataOut <- packet
 }
 
-func sendPacketByteArray(dataConn *net.UDPConn, data wjson.CommPacketJson) {
+// SendPacketByteArray writes data to BroadcastAddr
+func SendPacketByteArray(dataConn *net.UDPConn, data wjson.CommPacketJson) {
 	packet, err := json.Marshal(data)
+	_, err = dataConn.Write(packet)
 	if err != nil {
-		return
+		panic(err)
 	}
-	addr := net.UDPAddr{
-		Port: 12345,
-		IP:   net.ParseIP("localhost"),
-	}
-	fmt.Println("Broadcasting")
-	dataConn.WriteToUDP(packet, &addr)
+	fmt.Println("Broadcasting!")
 	fmt.Println(packet)
 }
