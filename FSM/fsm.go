@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/looplab/fsm"
 )
 
@@ -9,63 +10,63 @@ import (
 //Src: previous state that transitions into current state
 //Dst: next state that transitions from current state
 
-
 func main() {
 	fsm := fsm.NewFSM(
-		"idle"
+		"Cancel",
 		fsm.Events{
-			{Name: "stop", Src: []string{"idle","STOP","CANCEL"}, Dst: "ARM"},
-			{Name: "arming", Src: []string{"ARM","FAILED"}, Dst: "TOCHECK"},
-			{Name: "arming", Src: []string{"STOP","FAILED"}, Dst: "STOP"},
-			{Name: "system-on-check", Src: []string{"TOCHECK"}, Dst: "SUCCESS"},
-			{Name: "system-on-check", Src: []string{"TOCHECK"}, Dst: "FAILED"},
-			{Name: "armed", Src: []string{"SUCCESS"}, Dst: "START"},
-			{Name: "armed", Src: []string{"SUCCESS"}, Dst: "STOP"},
+			{Name: "Cancel", Src: []string{"Arming", "Armed"}, Dst: "Stop"},
+			{Name: "InitArm", Src: []string{"Stop"}, Dst: "Arming"},
+			{Name: "Tocheck", Src: []string{"Arming"}, Dst: "system-on-check"},
+			{Name: "Checkfailed", Src: []string{"system-on-check"}, Dst: "Arming"},
+			{Name: "Arm", Src: []string{"system-on-check"}, Dst: "Armed"},
 		},
 		fsm.Callbacks{
-			"scan": func(e *fsm.Event) {
+			"Cancel": func(e *fsm.Event) {
 				fmt.Println("Stopping all pod processes: " + e.FSM.Current())
 			},
-			"arming": func(e *fsm.Event) {
+			"InitArm": func(e *fsm.Event) {
 				fmt.Println("Setting up the pod: " + e.FSM.Current())
 			},
-			"system-on-check": func(e *fsm.Event) {
+			"Tocheck": func(e *fsm.Event) {
 				fmt.Println("Verifying pod functionality: " + e.FSM.Current())
 			},
-			"armed": func(e *fsm.Event) {
-				fmt.Println("Ready: " + e.FSM.Current())
+			"Checkfailed": func(e *fsm.Event) {
+				fmt.Println("Sensors not working, try to reinitialize " + e.FSM.Current())
+			},
+			"Arm": func(e *fsm.Event) {
+				fmt.Println("Ready for deployment: " + e.FSM.Current())
 			},
 		},
 	)
 
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("scan")
+	err := fsm.Event("Cancel")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("1:" + fsm.Current())
+	fmt.Println("1 " + fsm.Current())
 
-	err = fsm.Event("working")
+	err = fsm.Event("InitArm")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("2:" + fsm.Current())
+	fmt.Println("2 " + fsm.Current())
 
-	err = fsm.Event("situation")
+	err = fsm.Event("Tocheck")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("3:" + fsm.Current())
+	fmt.Println("3 " + fsm.Current())
 
-	err = fsm.Event("finish")
+	err = fsm.Event("Arm")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("4:" + fsm.Current())
+	fmt.Println("4 " + fsm.Current())
 
 }
