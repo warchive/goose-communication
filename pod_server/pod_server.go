@@ -8,10 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"../server/lib/wstream"
+	"../desktop_client/lib/wstream"
 	quic "github.com/lucas-clemente/quic-go"
 	"github.com/mogball/wcomms/wjson"
-	// "github.com/buger/jsonparser"
 )
 
 // CheckError Simple error verification
@@ -55,18 +54,18 @@ func HandleStream(channel string, wstream wstream.Stream) {
 		}
 	} else {
 		for {
-			SendPacket(channel, wstream)
+			SendPacket(channel, 123, wstream)
 			time.Sleep(time.Second)
 		}
 	}
 }
 
 // SendPacket takes a CommPacketJson to send back to server and log the data
-func SendPacket(channel string, wstream wstream.Stream) {
+func SendPacket(channel string, id uint8, wstream wstream.Stream) {
 	packet := &wjson.CommPacketJson{
 		Time: 1323,
 		Type: channel,
-		Name: channel,
+		Id:   id,
 		Data: []float32{32.2323, 1222.22, 2323.11},
 	}
 	wstream.WriteCommPacketSync(packet)

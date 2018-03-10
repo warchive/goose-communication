@@ -9,6 +9,7 @@ import (
 	"math/big"
 )
 
+// GenerateConfig creates the tls config for opening a QUIC stream
 func GenerateConfig() *tls.Config {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {

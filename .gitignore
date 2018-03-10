@@ -15,4 +15,4 @@
 .glide/
 
 # Ignore logs
-client/logs/log.txt
+pod_server/logs/log.txt

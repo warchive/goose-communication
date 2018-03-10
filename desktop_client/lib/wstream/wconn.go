@@ -6,11 +6,13 @@ import (
 	quic "github.com/lucas-clemente/quic-go"
 )
 
+// Conn is a connection interface that uses QUIC Streams
 type Conn interface {
 	Close()
 	Streams() map[string]Stream
 }
 
+// WConn is a QUIC Stream with a specific ID and session
 type WConn struct {
 	ID      int
 	streams map[string]Stream

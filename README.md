@@ -1,9 +1,9 @@
 # Backend/Communication-Systems
 
 ### Golang installation commands for Raspbian
-- Current version: 1.9.2 (ARM)
-- ```wget https://storage.googleapis.com/golang/go1.9.2.linux-armv6l.tar.gz```
-- ```sudo tar -C /usr/local -xzf go1.9.2.linux-armv6l.tar.gz```
+- Current version: 1.10 (ARM)
+- ```wget https://dl.google.com/go/go1.10.linux-armv6l.tar.gz```
+- ```sudo tar -C /usr/local -xzf go1.10.linux-armv6l.tar.gz```
 - ```export PATH=$PATH:/usr/local/go/bin```
 
 ### Golang Dependencies
