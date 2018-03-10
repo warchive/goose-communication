@@ -11,7 +11,6 @@ import (
 	"../desktop_client/lib/wstream"
 	quic "github.com/lucas-clemente/quic-go"
 	"github.com/mogball/wcomms/wjson"
-	// "github.com/buger/jsonparser"
 )
 
 // CheckError Simple error verification

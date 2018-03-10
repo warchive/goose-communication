@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"os"
 	"time"
-	// "bufio"
 
 	"./lib/tls"
+	"./lib/wpool"
 	"./lib/wstream"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/mogball/wcomms/wjson"
-	// "github.com/tarm/serial"
 )
 
 const addr = ":10000"
-
-var i int
 
 func main() {
 	// Choose port to listen from
@@ -25,27 +22,15 @@ func main() {
 	CheckError(err)
 
 	fmt.Println("Server started")
-
-	/*
-		c := &serial.Config{Name: "COM3", Baud: 9600}
-		s, err := serial.OpenPort(c)
-		checkError(err)
-		reader := bufio.NewReader(s)
-	*/
 	for {
-		/*
-			r, err := reader.ReadBytes(255)
-			checkError(err)
-			fmt.Println(r)
-		*/
 		session, err := listener.Accept() // Wait for call and return a Conn
 		if err != nil {
 			break
 		}
-
 		go HandleClient(session)
-
 	}
+	wpool := wpool.CreateWPool("12345", wpool.DataHandler)
+	wpool.Serve()
 }
 
 // HandleClient accepts a wstream connection from the pod
