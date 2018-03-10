@@ -13,24 +13,31 @@ import (
 	"github.com/mogball/wcomms/wjson"
 )
 
-const addr = ":10000"
+const podAddr = ":10000"
 
 func main() {
 	// Choose port to listen from
 	config := quic.Config{IdleTimeout: 0}
-	listener, err := quic.ListenAddr(addr, tls.GenerateConfig(), &config)
+	listener, err := quic.ListenAddr(podAddr, tls.GenerateConfig(), &config)
 	CheckError(err)
 
 	fmt.Println("Server started")
-	for {
-		session, err := listener.Accept() // Wait for call and return a Conn
-		if err != nil {
-			break
+	go func() {
+		for {
+			session, err := listener.Accept() // Wait for call and return a Conn
+			if err != nil {
+				break
+			}
+			go HandleClient(session)
 		}
-		go HandleClient(session)
+	}()
+	fmt.Println("Pool created")
+	wpool := wpool.CreateWPool("localhost:12345", "localhost:12346", wpool.CommandHandler)
+	go wpool.Serve()
+	for {
+		time.Sleep(time.Second)
+		wpool.BroadcastPacket()
 	}
-	wpool := wpool.CreateWPool("12345", wpool.DataHandler)
-	wpool.Serve()
 }
 
 // HandleClient accepts a wstream connection from the pod
