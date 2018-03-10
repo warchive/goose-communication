@@ -5,31 +5,25 @@ import (
 	"net"
 )
 
-const dataAddr = "localhost:12345"
+const dataAddr = ":12345"
 const commandAddr = ":12346"
 
 func main() {
-	// Choose port to listen from
-	ServerAddr, err := net.ResolveUDPAddr("udp", dataAddr)
-	dataConn, err := net.DialUDP("udp", nil, ServerAddr)
-	//commandConn, err := net.Dial("tcp", commandAddr)
+	addr, err := net.ResolveUDPAddr("udp", dataAddr)
+	dataConn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 	defer dataConn.Close()
-	//defer commandConn.Close()
 
-	buffer := make([]byte, 1024)
+	buf := make([]byte, 1024)
+
 	for {
-		fmt.Println("Hello")
-		fmt.Println(dataConn)
-		n, _, err := dataConn.ReadFromUDP(buffer)
-		fmt.Println(n)
+		n, addr, err := dataConn.ReadFromUDP(buf)
+		fmt.Println("Received ", string(buf[0:n]), " from ", addr)
+
 		if err != nil {
-			fmt.Println(string(buffer[0:n]))
-		} else {
-			fmt.Println(err)
+			fmt.Println("Error: ", err)
 		}
 	}
 }
