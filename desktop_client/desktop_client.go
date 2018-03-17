@@ -14,8 +14,8 @@ import (
 )
 
 const podAddr = ":10000"
-const dataAddr = ":12345"
-const commandAddr = ":12345"
+const dataAddr = "255.255.255.255:12345"
+const commandAddr = ":12346"
 
 func main() {
 	// Choose port to listen from
@@ -37,7 +37,7 @@ func main() {
 }
 
 func initPool() {
-	wpool := wpool.CreateWPool(dataAddr, commandAddr, wpool.CommandHandler)
+	wpool := wpool.CreateWPool(dataAddr, commandAddr)
 	fmt.Println("Pool created")
 	go wpool.Serve()
 	for {

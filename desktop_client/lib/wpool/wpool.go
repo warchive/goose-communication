@@ -9,33 +9,30 @@ import (
 )
 
 // MaxConns stores the maximum number of clients allowed to connect
-const MaxConns = 10
+const MaxConns = 3
 
-// BroadcastAddr is the address where data is broadcasted to
-const BroadcastAddr = "255.255.255.255:12345"
-
-// Handler for recieving data with WPool
-type Handler func(*WPool, net.Conn)
+// PacketBufferSize is the maximum number of packets to keep in a data channel
+const PacketBufferSize = 100
 
 // WPool is a connection pool manager for UDP using net.Conn
 type WPool struct {
 	dataAddr    string
 	commandAddr string
-	handler     Handler
-	dataIn      chan wjson.CommPacketJson
-	dataOut     chan wjson.CommPacketJson
+	dataIn      chan *wjson.CommPacketJson
+	dataOut     chan *wjson.CommPacketJson
 	numConns    int
+	connections []net.Conn
 }
 
 // CreateWPool initializes and returns a WPool with a provided port
-func CreateWPool(dataAddr string, commandAddr string, handler Handler) *WPool {
+func CreateWPool(dataAddr string, commandAddr string) *WPool {
 	return &WPool{
 		dataAddr:    dataAddr,
 		commandAddr: commandAddr,
-		handler:     handler,
-		dataIn:      make(chan wjson.CommPacketJson),
-		dataOut:     make(chan wjson.CommPacketJson),
+		dataIn:      make(chan *wjson.CommPacketJson, PacketBufferSize),
+		dataOut:     make(chan *wjson.CommPacketJson, PacketBufferSize),
 		numConns:    0,
+		connections: make([]net.Conn, 0),
 	}
 }
 
@@ -48,7 +45,7 @@ func (pool *WPool) Serve() {
 }
 
 func (pool *WPool) serveDataChannel() {
-	broadcast, err := net.ResolveUDPAddr("udp", BroadcastAddr)
+	broadcast, err := net.ResolveUDPAddr("udp", pool.dataAddr)
 	dataConn, err := net.DialUDP("udp", nil, broadcast)
 	if err != nil {
 		panic(err)
@@ -66,26 +63,6 @@ func (pool *WPool) serveCommandChannel() {
 	if err != nil {
 		panic(err)
 	}
-	connChannel := make(chan net.Conn)
-
-	// Goroutine for connection queue
-	go func(connChannel chan net.Conn, output chan wjson.CommPacketJson) {
-		var connections [MaxConns]net.Conn
-		for {
-			select {
-			case conn := <-connChannel:
-				connections[pool.numConns] = conn
-				pool.numConns++
-			case data := <-output:
-				for i := 0; i < pool.numConns; i = i + 1 {
-					packet, err := json.Marshal(data)
-					if err == nil {
-						connections[i].Write(packet)
-					}
-				}
-			}
-		}
-	}(connChannel, pool.dataOut)
 
 	for {
 		if pool.numConns >= MaxConns {
@@ -94,60 +71,65 @@ func (pool *WPool) serveCommandChannel() {
 		conn, err := commandConn.Accept()
 		fmt.Println("Connected")
 		if err != nil {
-			panic(err)
+			continue
 		}
-		go pool.handler(pool, conn)
-		connChannel <- conn
+		pool.numConns++
+		pool.connections = append(pool.connections, conn)
+		go pool.commandHandler(conn, pool.numConns-1)
 	}
 }
 
 // CommandHandler reads data from the connected clients
-func CommandHandler(pool *WPool, conn net.Conn) {
-	recvChannel := make(chan wjson.CommPacketJson)
-	errChannel := make(chan error)
-
+func (pool *WPool) commandHandler(conn net.Conn, connIndex int) {
+	recvChannel := make(chan *wjson.CommPacketJson)
+	buf := make([]byte, 1024)
 	// Goroutine for receiving from client
-	go func(recvChannel chan wjson.CommPacketJson, errChannel chan error) {
+	go func() {
+
 		for {
-			data := make([]byte, 1024)
-			_, err := conn.Read(data)
+			n, err := conn.Read(buf)
 			if err != nil {
-				errChannel <- err
+				fmt.Println(err)
+				pool.closeConn(conn, connIndex)
 				return
 			}
-			packet := wjson.CommPacketJson{}
-			err = json.Unmarshal(data, &packet)
+			packet := &wjson.CommPacketJson{}
+			err = json.Unmarshal(buf[:n], packet)
 			if err == nil {
 				recvChannel <- packet
+			} else {
+				fmt.Println(err)
+				pool.closeConn(conn, connIndex)
+				return
 			}
 		}
-	}(recvChannel, errChannel)
+	}()
 
-	// Listen to broadcast
+	// Broadcast recvd command to all clients
+	// TODO: Send to pod
 	for {
-		select {
-		// Receive from client and write same data back to broadcast
-		// TODO recieve dataOut from desktop_client.go
-		case data := <-recvChannel:
-			pool.dataIn <- data
-		// Close connection on error
-		case <-errChannel:
-			pool.numConns--
-			conn.Close()
-			return
-		}
+		packet := <-recvChannel
+		pool.dataIn <- packet
+		pool.BroadcastPacket(packet)
 	}
 }
 
+func (pool *WPool) closeConn(conn net.Conn, index int) {
+	pool.connections[index] = pool.connections[pool.numConns-1]
+	pool.connections = pool.connections[:pool.numConns-1]
+	pool.numConns--
+	conn.Close()
+	fmt.Println("Connection", index, "closed")
+}
+
 // BroadcastPacket sets the current dataOut to the provided packet
-// TODO pass in data from desktop client
 func (pool *WPool) BroadcastPacket(packet *wjson.CommPacketJson) {
-	pool.dataOut <- *packet
+	pool.dataOut <- packet
 }
 
 // SendPacketByteArray writes data to BroadcastAddr
-func SendPacketByteArray(dataConn *net.UDPConn, data wjson.CommPacketJson) {
-	packet, err := json.Marshal(data)
+func SendPacketByteArray(dataConn *net.UDPConn, data *wjson.CommPacketJson) {
+	packet, err := json.Marshal(*data)
 	_, err = dataConn.Write(packet)
 	fmt.Println("Broadcasting ", string(packet))
 	if err != nil {
