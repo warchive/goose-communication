@@ -41,24 +41,32 @@ func CreateWPool(dataAddr string, commandAddr string, handler Handler) *WPool {
 
 // Serve starts the connection pool and adds / closes connections
 func (pool *WPool) Serve() {
-	DataAddr, err := net.ResolveUDPAddr("udp", BroadcastAddr)
-	dataConn, err := net.DialUDP("udp", nil, DataAddr)
-	fmt.Println(dataConn)
-	commandConn, err := net.Listen("tcp", pool.commandAddr)
+	fmt.Println("Serving data channel")
+	pool.serveDataChannel()
+	fmt.Println("Serving commands channel")
+	pool.serveCommandChannel()
+}
 
-	connChannel := make(chan net.Conn)
-
+func (pool *WPool) serveDataChannel() {
+	broadcast, err := net.ResolveUDPAddr("udp", BroadcastAddr)
+	dataConn, err := net.DialUDP("udp", nil, broadcast)
 	if err != nil {
 		panic(err)
 	}
-
 	go func() {
 		for {
 			data := <-pool.dataOut
-			fmt.Println(data)
 			SendPacketByteArray(dataConn, data)
 		}
 	}()
+}
+
+func (pool *WPool) serveCommandChannel() {
+	commandConn, err := net.Listen("tcp", pool.commandAddr)
+	if err != nil {
+		panic(err)
+	}
+	connChannel := make(chan net.Conn)
 
 	// Goroutine for connection queue
 	go func(connChannel chan net.Conn, output chan wjson.CommPacketJson) {
@@ -79,7 +87,6 @@ func (pool *WPool) Serve() {
 		}
 	}(connChannel, pool.dataOut)
 
-	// Add new connections
 	for {
 		if pool.numConns >= MaxConns {
 			continue
@@ -134,23 +141,16 @@ func CommandHandler(pool *WPool, conn net.Conn) {
 
 // BroadcastPacket sets the current dataOut to the provided packet
 // TODO pass in data from desktop client
-func (pool *WPool) BroadcastPacket() {
-	packet := wjson.CommPacketJson{
-		Time: 1323,
-		Type: "State",
-		Id:   122,
-		Data: []float32{32.2323, 1222.22, 2323.11},
-	}
-	pool.dataOut <- packet
+func (pool *WPool) BroadcastPacket(packet *wjson.CommPacketJson) {
+	pool.dataOut <- *packet
 }
 
 // SendPacketByteArray writes data to BroadcastAddr
 func SendPacketByteArray(dataConn *net.UDPConn, data wjson.CommPacketJson) {
 	packet, err := json.Marshal(data)
 	_, err = dataConn.Write(packet)
+	fmt.Println("Broadcasting ", string(packet))
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Broadcasting!")
-	fmt.Println(packet)
 }

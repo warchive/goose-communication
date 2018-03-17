@@ -14,6 +14,8 @@ import (
 )
 
 const podAddr = ":10000"
+const dataAddr = ":12345"
+const commandAddr = ":12345"
 
 func main() {
 	// Choose port to listen from
@@ -31,12 +33,22 @@ func main() {
 			go HandleClient(session)
 		}
 	}()
+	initPool()
+}
+
+func initPool() {
+	wpool := wpool.CreateWPool(dataAddr, commandAddr, wpool.CommandHandler)
 	fmt.Println("Pool created")
-	wpool := wpool.CreateWPool("localhost:12345", "localhost:12346", wpool.CommandHandler)
 	go wpool.Serve()
 	for {
 		time.Sleep(time.Second)
-		wpool.BroadcastPacket()
+		packet := &wjson.CommPacketJson{
+			Time: 1323,
+			Type: "State",
+			Id:   122,
+			Data: []float32{32.2323, 1222.22, 2323.11},
+		}
+		wpool.BroadcastPacket(packet)
 	}
 }
 

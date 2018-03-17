@@ -11,6 +11,7 @@ const commandAddr = ":12346"
 func main() {
 	addr, err := net.ResolveUDPAddr("udp", dataAddr)
 	dataConn, err := net.ListenUDP("udp", addr)
+	//commandConn, err := net.Dial("tcp", commandAddr)
 	if err != nil {
 		panic(err)
 	}
