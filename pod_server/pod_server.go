@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"../desktop_client/lib/wstream"
 	quic "github.com/lucas-clemente/quic-go"
-	"github.com/mogball/wcomms/wjson"
+	"github.com/waterloop/wcomms/wjson"
+	"github.com/waterloop/wstream"
 )
 
 // CheckError Simple error verification

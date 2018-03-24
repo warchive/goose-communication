@@ -16,3 +16,4 @@
 
 # Ignore logs
 pod_server/logs/log.txt
+relay_server/logs/log.txt
