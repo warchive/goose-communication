@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"./lib/tls"
-	"./lib/wpool"
-	"./lib/wstream"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/mogball/wcomms/wjson"
+	"github.com/waterloop/wcomms/wjson"
+	"github.com/waterloop/wpool"
+	"github.com/waterloop/wstream"
 )
 
 const podAddr = ":10000"
