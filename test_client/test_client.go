@@ -9,8 +9,8 @@ import (
 	"github.com/waterloop/wcomms/wjson"
 )
 
-const dataAddr = ":42000"
-const commandAddr = "localhost:42001"
+const dataAddr = ":42001"
+const commandAddr = "localhost:42002"
 
 func main() {
 	addr, err := net.ResolveUDPAddr("udp", dataAddr)
@@ -40,7 +40,7 @@ func main() {
 		time.Sleep(time.Second)
 		data := wjson.CommPacketJson{
 			Time: 1323,
-			Type: "Command",
+			Type: "command",
 			Id:   111,
 			Data: []float32{32.2323, 1222.22, 2323.11},
 		}

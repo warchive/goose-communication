@@ -16,8 +16,10 @@ import (
 var podAddr string
 var dataAddr string
 var commandAddr string
+var dataChan chan *wjson.CommPacketJson
+var commandChan chan *wjson.CommPacketJson
 
-const packetBufferSize = 1000
+const packetBufferSize = 1024
 
 func main() {
 	// Get port from environment variables
@@ -28,7 +30,9 @@ func main() {
 	config := quic.Config{IdleTimeout: 0}
 	listener, err := quic.ListenAddr(podAddr, tls.GenerateConfig(), &config)
 	CheckError(err)
-	data := make(chan *wjson.CommPacketJson, packetBufferSize)
+
+	dataChan = make(chan *wjson.CommPacketJson, packetBufferSize)
+	commandChan = make(chan *wjson.CommPacketJson, packetBufferSize)
 
 	fmt.Println("Server started")
 	go func() {
@@ -37,60 +41,67 @@ func main() {
 			if err != nil {
 				break
 			}
-			go HandleClient(session, data)
+			go HandlePodConn(session)
 		}
 	}()
-	go InitPool(data)
+	InitPool()
 }
 
 // InitPool creates a connection pool to relay data to the clients
-func InitPool(dataChan <-chan *wjson.CommPacketJson) {
+func InitPool() {
 	wpool := wpool.CreateWPool(dataAddr, commandAddr)
 	fmt.Println("Pool created")
 	go wpool.Serve()
+	go func() {
+		for {
+			packet := <-dataChan
+			fmt.Println(packet)
+			wpool.BroadcastPacket(packet)
+		}
+	}()
+
 	for {
-		packet := <-dataChan
-		wpool.BroadcastPacket(packet)
+		command := wpool.GetNextCommand()
+		commandChan <- command
 	}
 }
 
-// HandleClient accepts a wstream connection from the pod
-func HandleClient(session quic.Session, dataChan chan<- *wjson.CommPacketJson) {
+// HandlePodConn accepts a wstream connection from the pod
+func HandlePodConn(session quic.Session) {
 	//defer session.Close(nil)
+	streams := []string{"sensor1", "sensor2", "sensor3", "command", "log"}
 	wconn := wstream.AcceptConn(&session, []string{"sensor1", "sensor2", "sensor3", "command", "log"})
-	fmt.Printf("%s %+v\n", "sss", wconn.Streams())
-	for k, v := range wconn.Streams() {
-		go HandleStream(k, v, dataChan)
+	fmt.Println("HOLY FUCK")
+	for _, k := range streams {
+		fmt.Println(k)
+		go HandleStream(k, wconn.Streams()[k])
+		fmt.Println(k)
 	}
 }
 
 // HandleStream takes each stream and reads the packets being sent
-func HandleStream(channel string, wstream wstream.Stream, dataChan chan<- *wjson.CommPacketJson) {
+func HandleStream(channel string, wstream wstream.Stream) {
 	defer wstream.Close()
-	for {
-		AcknowledgeMessage(wstream, 123)
-		packet, err := wstream.ReadCommPacketSync()
-		if err != nil {
-			fmt.Println(err)
-			continue
+	if channel == "command" {
+		for {
+			command := <-commandChan
+			wstream.WriteCommPacketSync(command)
 		}
-		dataChan <- packet
-		fmt.Printf("%s %+v\n", channel, packet)
-		p, err := json.Marshal(packet)
-		CheckError(err)
-		LogPacket(p)
+	} else {
+		for {
+			packet, err := wstream.ReadCommPacketSync()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			dataChan <- packet
+			fmt.Printf("%s %+v\n", channel, packet)
+			p, err := json.Marshal(packet)
+			CheckError(err)
+			LogPacket(p)
+		}
 	}
-}
 
-// AcknowledgeMessage lets the client know a message was recieved
-func AcknowledgeMessage(wstream wstream.Stream, id uint8) {
-	packet := &wjson.CommPacketJson{
-		Time: 1323,
-		Type: "MessageRecieved",
-		Id:   id,
-		Data: []float32{32.2323, 1222.22, 2323.11},
-	}
-	wstream.WriteCommPacketSync(packet)
 }
 
 // CheckError checks and print errors

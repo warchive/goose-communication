@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	quic "github.com/lucas-clemente/quic-go"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/waterloop/wcomms/wjson"
 	"github.com/waterloop/wstream"
 )
@@ -20,10 +20,10 @@ func CheckError(err error) {
 	}
 }
 
-// Different addresses and ports to send data to
-const addr = "localhost:10000"
+var addr string
 
 func main() {
+	addr = "localhost:" + os.Getenv("POD_PORT")
 	config := quic.Config{RequestConnectionIDOmission: false}
 
 	session, err := quic.DialAddr(addr, &tls.Config{InsecureSkipVerify: true}, &config)
@@ -33,17 +33,29 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	defer wg.Done()
+
+	streams := []string{"sensor1", "sensor2", "sensor3", "command", "log"}
 	wconn := wstream.OpenConn(&session, []string{"sensor1", "sensor2", "sensor3", "command", "log"})
-	for k, v := range wconn.Streams() {
-		go HandleStream(k, v)
+	for _, k := range streams {
+		go HandleStream(k, wconn.Streams()[k])
 	}
 	wg.Wait()
 }
 
 // HandleStream opens a new stream to send data over
 func HandleStream(channel string, wstream wstream.Stream) {
-	defer wstream.Close()
+	fmt.Println(channel)
 	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
+		for {
+			SendPacket(channel, 123, wstream)
+			time.Sleep(time.Second)
+		}
+	} else {
+		// SOMETHING IS HORRIBLY WRONG HERE
+		for {
+			SendPacket(channel, 123, wstream)
+			time.Sleep(time.Second)
+		}
 		for {
 			packet, err := wstream.ReadCommPacketSync()
 			if err != nil {
@@ -51,11 +63,6 @@ func HandleStream(channel string, wstream wstream.Stream) {
 				continue
 			}
 			fmt.Printf("%s %+v\n", channel, packet)
-		}
-	} else {
-		for {
-			SendPacket(channel, 123, wstream)
-			time.Sleep(time.Second)
 		}
 	}
 }
