@@ -6,19 +6,24 @@ import (
 	"time"
 
 	"./lib/tls"
-	"./lib/wpool"
-	"./lib/wstream"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/mogball/wcomms/wjson"
+	"github.com/waterloop/wcomms/wjson"
+	"github.com/waterloop/wpool"
+	"github.com/waterloop/wstream"
 )
 
-const podAddr = ":10000"
-const dataAddr = "255.255.255.255:12345"
-const commandAddr = ":12346"
+var podAddr string
+var dataAddr string
+var commandAddr string
 
 func main() {
 	// Choose port to listen from
+
+	podAddr = ":" + os.Getenv("POD_PORT")
+	dataAddr = "255.255.255.255:" + os.Getenv("DATA_PORT")
+	commandAddr = ":" + os.Getenv("COMMAND_PORT")
+
 	config := quic.Config{IdleTimeout: 0}
 	listener, err := quic.ListenAddr(podAddr, tls.GenerateConfig(), &config)
 	CheckError(err)

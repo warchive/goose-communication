@@ -6,11 +6,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/mogball/wcomms/wjson"
+	"github.com/waterloop/wcomms/wjson"
 )
 
-const dataAddr = ":12345"
-const commandAddr = "localhost:12346"
+const dataAddr = ":42000"
+const commandAddr = "localhost:42001"
 
 func main() {
 	addr, err := net.ResolveUDPAddr("udp", dataAddr)
