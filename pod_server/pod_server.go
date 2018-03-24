@@ -45,17 +45,12 @@ func main() {
 // HandleStream opens a new stream to send data over
 func HandleStream(channel string, wstream wstream.Stream) {
 	fmt.Println(channel)
-	if (channel == "sensor1") || (channel == "sensor2") || (channel == "sensor3") {
+	if channel != "command" {
 		for {
 			SendPacket(channel, 123, wstream)
 			time.Sleep(time.Second)
 		}
 	} else {
-		// SOMETHING IS HORRIBLY WRONG HERE
-		for {
-			SendPacket(channel, 123, wstream)
-			time.Sleep(time.Second)
-		}
 		for {
 			packet, err := wstream.ReadCommPacketSync()
 			if err != nil {

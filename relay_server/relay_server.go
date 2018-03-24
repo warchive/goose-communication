@@ -55,7 +55,6 @@ func InitPool() {
 	go func() {
 		for {
 			packet := <-dataChan
-			fmt.Println(packet)
 			wpool.BroadcastPacket(packet)
 		}
 	}()
@@ -71,11 +70,8 @@ func HandlePodConn(session quic.Session) {
 	//defer session.Close(nil)
 	streams := []string{"sensor1", "sensor2", "sensor3", "command", "log"}
 	wconn := wstream.AcceptConn(&session, []string{"sensor1", "sensor2", "sensor3", "command", "log"})
-	fmt.Println("HOLY FUCK")
 	for _, k := range streams {
-		fmt.Println(k)
 		go HandleStream(k, wconn.Streams()[k])
-		fmt.Println(k)
 	}
 }
 

@@ -3,14 +3,14 @@ FROM golang:latest
 WORKDIR /wloop/test_client
 
 RUN \
-	go get github.com/waterloop/wcomms/wjson
+	go get -u github.com/waterloop/wcomms/wjson
 
 COPY . .
 
 ENV \
   POD_PORT=42000 \
-  DATA_PORT=42000 \
-  COMMAND_PORT=42001
+  DATA_PORT=42001 \
+  COMMAND_PORT=42002
 
 EXPOSE $POD_PORT $DATA_PORT $COMMAND_PORT
 
