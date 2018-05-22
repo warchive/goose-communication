@@ -18,11 +18,21 @@ BIN_NAME_POD=pod_server
 BIN_NAME_RELAY=relay_server
 BIN_NAME_TEST=test_client
 
-all: pod-server relay-server test-client
+all: get deps-update pod-server relay-server test-client
+
+deps-update:
+	@echo Updating Dependencies
+	@govendor sync +vendor
+	@echo Dependencies Updated!
+
+get:
+	@echo Getting Required tools to build this project
+	go get -u github.com/kardianos/govendor
+	@echo Tools Downloaded and Built!!
 
 pod-server:
 	@echo Building $(BIN_NAME_POD) project:
-ifeq ($(PLATFORM),Windows)
+ifeq ($(PLATFORM),MSYS_NT-10.0)
 	@cd "$(CURDIR)/$(DIR_NAME_POD)/cmd/$(DIR_NAME_POD)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_POD).exe -v
 else
 	@cd "$(CURDIR)/$(DIR_NAME_POD)/cmd/$(DIR_NAME_POD)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_POD) -v
@@ -32,7 +42,7 @@ endif
 
 relay-server:
 	@echo Building $(BIN_NAME_RELAY) project:
-ifeq ($(PLATFORM),Windows)
+ifeq ($(PLATFORM),MSYS_NT-10.0)
 	@cd "$(CURDIR)/$(DIR_NAME_RELAY)/cmd/$(DIR_NAME_RELAY)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_RELAY).exe -v
 else
 	@cd "$(CURDIR)/$(DIR_NAME_RELAY)/cmd/$(DIR_NAME_RELAY)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_RELAY) -v
@@ -43,7 +53,7 @@ endif
 
 test-client:
 	@echo Building $(BIN_NAME_RELAY) project:
-ifeq ($(PLATFORM),Windows)
+ifeq ($(PLATFORM),MSYS_NT-10.0)
 	@cd "$(CURDIR)/$(DIR_NAME_TEST)/cmd/$(DIR_NAME_TEST)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_TEST).exe -v
 else
 	@cd "$(CURDIR)/$(DIR_NAME_TEST)/cmd/$(DIR_NAME_TEST)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_TEST) -v
@@ -53,7 +63,7 @@ endif
 
 clean:
 	@echo Cleaning build files:
-ifeq ($(PLATFORM),Windows)
+ifeq ($(PLATFORM),MSYS_NT-10.0)
 	@rmdir bin
 else
 	@rm -rf bin
