@@ -18,7 +18,18 @@ BIN_NAME_POD=pod_server
 BIN_NAME_RELAY=relay_server
 BIN_NAME_TEST=test_client
 
-all: pod-server relay-server test-client
+all: get deps-update pod-server relay-server test-client
+
+deps-update:
+	@echo Updating Dependencies
+	@govendor update +vendor
+	@govendor sync +vendor
+	@echo Dependencies Updated!
+
+get:
+	@echo Getting Required tools to build this project
+	go get -u github.com/kardianos/govendor
+	@echo Tools Downloaded and Built!!
 
 pod-server:
 	@echo Building $(BIN_NAME_POD) project:
