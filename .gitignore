@@ -20,3 +20,5 @@ relay_server/logs/log.txt
 
 .idea/
 bin/
+client/node_modules
+client/package-lock.json

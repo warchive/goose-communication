@@ -1,0 +1,14 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "description": "Client for Go Server",
+  "main": "client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^5.2.0"
+  }
+}
