@@ -8,65 +8,28 @@ GOGET=$(GOCMD) get
 # os platform
 PLATFORM := $(shell uname)
 
-# code dir names
-DIR_NAME_POD=pod
-DIR_NAME_RELAY=relay
-DIR_NAME_TEST=test
+setup-client:
+	@cd "client" && npm install --save
 
-# binary names
-BIN_NAME_POD=pod_server
-BIN_NAME_RELAY=relay_server
-BIN_NAME_TEST=test_client
+build-server:
+	@echo Building the server
 
-all: get deps-update pod-server relay-server test-client
+	$(GOGET) -u github.com/gorilla/websocket
+	$(GOGET) -u github.com/waterloop/wcomms/wjson
+	$(GOGET) -u github.com/waterloop/wcomms/wbinary
 
-deps-update:
-	@echo Updating Dependencies
-	@govendor sync +vendor
-	@echo Dependencies Updated!
-
-get:
-	@echo Getting Required tools to build this project
-	go get -u github.com/kardianos/govendor
-	@echo Tools Downloaded and Built!!
-
-pod-server:
-	@echo Building $(BIN_NAME_POD) project:
 ifeq ($(PLATFORM),MSYS_NT-10.0)
-	@cd "$(CURDIR)/$(DIR_NAME_POD)/cmd/$(DIR_NAME_POD)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_POD).exe -v
+	@cd "$(CURDIR)/cmd/comms" && $(GOBUILD) -o ../../bin/server.exe -v
 else
-	@cd "$(CURDIR)/$(DIR_NAME_POD)/cmd/$(DIR_NAME_POD)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_POD) -v
+	@cd "$(CURDIR)/cmd/comms" && $(GOBUILD) -o ../../bin/server -v
 endif
 
-	@echo Pod Server Project built!!
-
-relay-server:
-	@echo Building $(BIN_NAME_RELAY) project:
+run-server:
 ifeq ($(PLATFORM),MSYS_NT-10.0)
-	@cd "$(CURDIR)/$(DIR_NAME_RELAY)/cmd/$(DIR_NAME_RELAY)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_RELAY).exe -v
+	@bin/server.exe
 else
-	@cd "$(CURDIR)/$(DIR_NAME_RELAY)/cmd/$(DIR_NAME_RELAY)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_RELAY) -v
+	@./bin/server
 endif
 
-	@echo Relay Server Project built!!
-
-
-test-client:
-	@echo Building $(BIN_NAME_RELAY) project:
-ifeq ($(PLATFORM),MSYS_NT-10.0)
-	@cd "$(CURDIR)/$(DIR_NAME_TEST)/cmd/$(DIR_NAME_TEST)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_TEST).exe -v
-else
-	@cd "$(CURDIR)/$(DIR_NAME_TEST)/cmd/$(DIR_NAME_TEST)" && $(GOBUILD) -o ../../../bin/$(BIN_NAME_TEST) -v
-endif
-
-	@echo Test Client Project built!!
-
-clean:
-	@echo Cleaning build files:
-ifeq ($(PLATFORM),MSYS_NT-10.0)
-	@rmdir bin
-else
-	@rm -rf bin
-endif
-
-	@echo Finished cleaning!!
+run-client:
+	node client/client.js
