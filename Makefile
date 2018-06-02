@@ -14,6 +14,10 @@ setup-client:
 build-server:
 	@echo Building the server
 
+	$(GOGET) -u github.com/gorilla/websocket
+	$(GOGET) -u github.com/waterloop/wcomms/wjson
+	$(GOGET) -u github.com/waterloop/wcomms/wbinary
+
 ifeq ($(PLATFORM),MSYS_NT-10.0)
 	@cd "$(CURDIR)/cmd/comms" && $(GOBUILD) -o ../../bin/server.exe -v
 else
