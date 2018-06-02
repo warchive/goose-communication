@@ -7,7 +7,7 @@ ws.on('open', function open() {
 });
 
 ws.on('message', function incoming(data) {
-    ws.send('gotcha!!')
+    ws.send(data)
     console.log(data);
 });
 
