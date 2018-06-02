@@ -28,4 +28,4 @@ else
 endif
 
 run-client:
-	node client.js
+	node client/client.js
