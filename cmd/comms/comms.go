@@ -7,25 +7,23 @@ import (
     "github.com/waterloop/wcomms/wbinary"
     "log"
     "time"
-    // "strconv"
 )
 
-var upgrader = websocket.Upgrader{}
+// orignalPacket converts to := []byte{178, 157, 26, 78, 167, 88, 234, 94}
+var originalPacket = &wbinary.CommPacket {
+    PacketType: wbinary.State,
+    PacketId:   54,
+    Data1:      -724.875,
+    Data2:      846.5,
+    Data3:      442.5625,
+}
+
+var upgrader = websocket.Upgrader{
+    ReadBufferSize:  1024,
+    WriteBufferSize: 1024,
+}
 
 func main() {
-
-    expectedPacket := &wbinary.CommPacket {
-        PacketType: wbinary.State,
-        PacketId:   54,
-        Data1:      -724.875,
-        Data2:      846.5,
-        Data3:      442.5625,
-    }
-
-    toSend := []byte{178, 157, 26, 78, 167, 88, 234, 94}
-
-    timeChan := time.NewTimer(time.Minute / 5).C
-    tickChan := time.NewTicker(time.Second).C
 
     http.HandleFunc("/v1/ws", func(w http.ResponseWriter, r *http.Request) {
 
@@ -33,26 +31,17 @@ func main() {
 
         go func() {
 
-                select {
+            for {
+                    // Write the packet after converting it to the 8-byte buffer.
+                    bytesToSend := wbinary.WritePacket(originalPacket)
 
-                case <-timeChan:
-                    log.Println("Packet Sent!")
+                    // Send the binary bytes of the original packet to the connection.
+                    conn.WriteMessage(websocket.BinaryMessage, bytesToSend)
+                    log.Printf("Sent these bytes: [%x]\n", bytesToSend)
 
-                case <-tickChan:
-                    // Read the 8-byte buffer and make a packet out of it.
-                    packetToSend := wbinary.ReadPacket(toSend)
+                    // Sleep before sending the next packet.
+                    time.Sleep(time.Second * 5)
 
-                    // Encode that packet, so we can send it.
-                    encodedPacket, thereWasAnError := wjson.PacketEncodeJson(packetToSend)
-                    if thereWasAnError != nil {
-                        panic(thereWasAnError)
-                    }
-
-                    // Send the encoded packet to the connection.
-                    conn.WriteMessage(1, encodedPacket)
-
-                    log.Println("Sent an encoded packet: ")
-                    log.Printf("%s", encodedPacket)
                 }
         }()
 
@@ -60,24 +49,30 @@ func main() {
         go func(conn *websocket.Conn) {
 
             for {
-                // Try to receive/read the encoded packet (that was sent).
-                _, receivedPacket, _ := conn.ReadMessage()
+                // Try to receive/read the bytes (that were sent).
+                receivedType, receivedBytes, _ := conn.ReadMessage()
 
-                log.Println("Received an encoded packet: ")
-                log.Printf("%s", receivedPacket)
+                // We only care if the message is binary (discard the rest).
+                if receivedType == websocket.BinaryMessage {
 
-                // Decode the recieved packet (encoded).
-                decodedPacket, thereWasAnError := wjson.PacketDecodeJson(receivedPacket)
-                if thereWasAnError != nil {
-                    panic(thereWasAnError)
-                }
+                    log.Printf("Recieved these bytes: [%x]\n", receivedBytes)
 
-                if *decodedPacket == *expectedPacket {
-                    log.Println("Success!!!!!!!!!!!!!!!!")
-                } else {
-                    log.Println("Expected a different packet.")
-                }
-            }
+                    // Read the recieved bytes and make a packet out of them.
+                    receivedPacket := wbinary.ReadPacket(receivedBytes)
+
+                    // Encode that packet, to make it pretty (JSON).
+                    encodedPacket, thereWasAnError := wjson.PacketEncodeJson(receivedPacket)
+                    if thereWasAnError != nil {
+                        panic(thereWasAnError)
+                    } else {
+
+                        log.Println("Encoded the received packet to JSON: ")
+                        log.Printf("%s\n", encodedPacket)
+                    }
+
+                } // End of check to see if the message we recieved was indeed binary.
+
+            } // End of for-loop.
 
         }(conn)
     })

@@ -10,4 +10,3 @@ ws.on('message', function incoming(data) {
     ws.send(data)
     console.log(data);
 });
-
