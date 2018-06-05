@@ -67,7 +67,6 @@ func main() {
                     }
                 } // End of check to see if the message we received was indeed binary.
             } // End of for-loop.
-
         }(conn)
     })
 
