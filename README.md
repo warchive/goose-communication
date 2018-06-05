@@ -1,4 +1,6 @@
-# Websockets
+# Goose Communication
+
+This is the code base for goose pod communication
 
 Pull client dependencies
 ```
