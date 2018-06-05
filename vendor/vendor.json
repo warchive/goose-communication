@@ -7,6 +7,18 @@
 			"path": "github.com/gorilla/websocket",
 			"revision": "21ab95fa12b9bdd8fecf5fa3586aad941cc98785",
 			"revisionTime": "2018-04-20T17:16:12Z"
+		},
+		{
+			"checksumSHA1": "kyCpZlqKNWK0gzu+4JR03UcCbKI=",
+			"path": "github.com/waterloop/wcomms/wbinary",
+			"revision": "67d6dc445eac4a5cf638ca2e45904df4a8a59f00",
+			"revisionTime": "2018-04-04T23:32:31Z"
+		},
+		{
+			"checksumSHA1": "bQyfGnCGqFwR5PUyrB+1XGGl5ow=",
+			"path": "github.com/waterloop/wcomms/wjson",
+			"revision": "67d6dc445eac4a5cf638ca2e45904df4a8a59f00",
+			"revisionTime": "2018-04-04T23:32:31Z"
 		}
 	],
 	"rootPath": "goose-communication"
