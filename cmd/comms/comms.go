@@ -9,6 +9,7 @@ import (
     "strconv"
     "encoding/json"
     "os"
+    "github.com/waterloop/wcomms/wjson"
 )
 
 
@@ -27,30 +28,25 @@ func PrintPackate(packet *wbinary.CommPacket) {
 
 func main() {
     // create initial mag wheels packet
-    var magPacket = &wbinary.CommPacket{
-        PacketType: wbinary.Sensor,
-        PacketId:   0,
-        Data1:      0,
-        Data2:      0,
-        Data3:      0,
+    var magPacket = &wjson.CommPacketJson{
+        Time: int64(time.Now().Second()),
+        Type: "sensor",
+        Data: []float32{0},
     }
 
+
     // create initial friction packet
-    var frictionPacket = &wbinary.CommPacket{
-        PacketType: wbinary.Sensor,
-        PacketId:   1,
-        Data1:      0,
-        Data2:      0,
-        Data3:      0,
+    var frictionPacket = &wjson.CommPacketJson{
+        Time: int64(time.Now().Second()),
+        Type: "sensor",
+        Data: []float32{0},
     }
 
     // create initial levitation packet
-    var levPacket = &wbinary.CommPacket{
-        PacketType: wbinary.Sensor,
-        PacketId:   2,
-        Data1:      0,
-        Data2:      0,
-        Data3:      0,
+    var levPacket = &wjson.CommPacketJson{
+        Time: int64(time.Now().Second()),
+        Type: "sensor",
+        Data: []float32{0},
     }
 
     // which packet to send
@@ -71,10 +67,11 @@ func main() {
                         log.Println(err.Error())
                         os.Exit(2)
                     }
-                    magPacket.Data1 += 1
+                    magPacket.Data[0] += 1
+                    magPacket.Time = int64(time.Now().Second())
 
-                    if magPacket.Data1 > 100 {
-                        magPacket.Data1 = 0
+                    if magPacket.Data[0]> 100 {
+                        magPacket.Data[0] = 0
                     }
                 } else if packetType == 1 {
                     bytesToSend, err = json.Marshal(frictionPacket)
@@ -82,10 +79,11 @@ func main() {
                         log.Println(err.Error())
                         os.Exit(2)
                     }
-                    frictionPacket.Data1 += 1
+                    frictionPacket.Data[0]+= 1
+                    frictionPacket.Time = int64(time.Now().Second())
 
-                    if frictionPacket.Data1 > 100 {
-                        frictionPacket.Data1 = 0
+                    if frictionPacket.Data[0] > 100 {
+                        frictionPacket.Data[0] = 0
                     }
                 } else if packetType == 2 {
                     bytesToSend, err = json.Marshal(levPacket)
@@ -93,10 +91,11 @@ func main() {
                         log.Println(err.Error())
                         os.Exit(2)
                     }
-                    levPacket.Data1 += 1
+                    levPacket.Data[0] += 1
+                    levPacket.Time = int64(time.Now().Second())
 
-                    if levPacket.Data1 > 100 {
-                        levPacket.Data1 = 0
+                    if levPacket.Data[0]> 100 {
+                        levPacket.Data[0] = 0
                     }
                 } else {
                     packetType = 0
